@@ -1,0 +1,37 @@
+name: git
+version: "0.1.0"
+subcommands:
+  - init:
+      about: "init git rep"
+
+  - status:
+      about: "status"
+
+  - add:
+      about: "add file"
+      args:
+        - files:
+            takes_value: true
+
+  - commit:
+      about: "commit file"
+      args:
+        - msg:
+            short: m
+            takes_value: true
+
+  - checkout:
+      about: "commit file"
+      args:
+        - branch:
+            short: b
+            takes_value: false
+        - name:
+            takes_value: true
+
+  - branch:
+      about: "list all branch"
+      args:
+        - remote:
+            short: r
+            takes_value: false

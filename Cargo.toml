@@ -1,0 +1,15 @@
+[package]
+name = "gitrs"
+version = "0.1.0"
+authors = ["bernie <xiongyuanbiao01@renmaitech.com>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0.26"
+clap = {version = "3.0.0-beta.1", features = ["yaml"]}
+binwrite = "0.2.1"
+byteorder = "*"
+sha1 = "0.6.0"
+compress = "0.1.2"
+flate2 = "1.0"
+nom = "6.0.1"
