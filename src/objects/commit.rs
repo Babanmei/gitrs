@@ -4,9 +4,12 @@ use std::fmt::Formatter;
 use sha1::Sha1;
 use std::os::macos::fs::MetadataExt;
 use std::path::PathBuf;
+use anyhow::Result;
 
+#[derive(Debug)]
 pub struct Commit {
-    tree: Tree,
+    parent: Option<String>,
+    pub tree: Tree,
     author: String,
     committer: String,
     msg: String,
@@ -21,6 +24,7 @@ impl Commit {
         let author = format!("bernie <xiongyuanbiao01@renmaitech.com> {} +0800", meta.st_ctime());
         let committer = format!("bernie <xiongyuanbiao01@renmaitech.com> {} +0800", meta.st_ctime());
         Commit {
+            parent: None,
             tree,
             author,
             committer,
@@ -42,6 +46,32 @@ impl Commit {
     }
 }
 
+/// parser commit file
+impl Commit {
+    pub fn from_hasher(hasher: &str) -> Result<Commit> {
+        let bytes = read_object(hasher)?;
+        let (_, commit) = parse_commit(bytes.as_slice()).unwrap();
+        Ok(commit)
+    }
+
+    fn from_objects_file(a: &[u8], b: &[u8], parent: Option<String>, c: &[u8], d: &[u8], e: &[u8]) -> Commit {
+        let cc = String::from_utf8(a.to_vec()).unwrap();
+        let _count = cc.parse::<i32>().unwrap();
+
+        let tree_hasher = String::from_utf8(b.to_vec()).unwrap();
+        let mut tree = Tree::from_hasher(&tree_hasher).unwrap();
+        tree.sha1 = tree_hasher;
+
+        Commit {
+            parent,
+            tree,
+            author: String::from_utf8(c.to_vec()).unwrap(),
+            committer: String::from_utf8(d.to_vec()).unwrap(),
+            msg: String::from_utf8(e.to_vec()).unwrap(),
+        }
+    }
+}
+
 impl fmt::Display for Commit {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "tree {}\nauthor {}\ncommitter {}\n\n{}",
@@ -52,6 +82,47 @@ impl fmt::Display for Commit {
         )
     }
 }
+
+
+use nom::{do_parse, is_not, named, tag, take, take_until};
+use nom::bytes::complete::{tag, take, take_until};
+use nom::combinator::opt;
+use crate::read_object;
+
+named!(parse_commit<Commit>,
+    do_parse!(
+        _commit: tag!("commit ") >>
+        count: is_not!("\0") >>
+        _a: take!(1) >>
+        _child: take_until!(" ") >>
+        _b: take!(1) >>
+        sha: take_until!("\n") >>
+        _c: take!(1) >>
+        parent: parent_str >>
+        author: take_until!("\n") >>
+        _d: take!(1) >>
+        committer: take_until!("\n\n") >>
+        _e: take!(2) >>
+        m: take_until!("\n") >>
+        (Commit::from_objects_file(count, sha, parent, author, committer, m))
+    )
+);
+
+fn parent_str(bytes: &[u8]) -> nom::IResult<&[u8], Option<String>> {
+    let (input, p) = opt(tag("parent"))(bytes)?;
+
+    if p.is_some() {
+        let (input, _s) = take(1usize)(input)?;
+        let (input, parent) = take_until("\n")(input)?;
+        let (input, _) = take(1usize)(input)?;
+
+        let s = String::from_utf8(parent.to_vec()).unwrap();
+        Ok((input, Some(s)))
+    } else {
+        Ok((bytes, None))
+    }
+}
+
 /*
 
 #[test]

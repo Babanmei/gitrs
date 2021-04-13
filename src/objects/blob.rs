@@ -1,7 +1,4 @@
 use anyhow::Result;
-use std::path::PathBuf;
-use std::fs::File;
-use std::io::Read;
 
 #[derive(Clone, Debug)]
 pub struct Blob {
@@ -25,18 +22,13 @@ impl Blob {
 
 /// parser file to blob struct
 impl Blob {
-    pub fn from(name: &str, hasher: Vec<u8>) -> Result<Blob> {
-        let path = PathBuf::new().join(".git").join("objects");
-        let path = path.join(String::from_utf8((&hasher[0..2]).to_vec())?);
-        let path = path.join(String::from_utf8((&hasher[2..]).to_vec())?);
-        //let path = path.join(&hasher[0..2]).join(&hasher[2..]);
-        let mut file = File::open(path)?;
-        let mut bytes = vec![];
-        file.read_to_end(&mut bytes)?;
-        let bytes = decoder(&bytes)?;
+    pub fn from(name: &str, hasher: &str) -> Result<Blob> {
+        let bytes = read_object(hasher)?;
+
         let (_, blob) = parse_blob(&bytes).unwrap();
         *blob.name.borrow_mut() = name.to_string();
-        *blob.hasher.borrow_mut() = hasher;//hasher.to_string();
+        let x = hasher.as_bytes().to_vec();
+        *blob.hasher.borrow_mut() = x;
         Ok(blob)
     }
 }
@@ -53,7 +45,7 @@ use nom::character::is_digit;
 use std::cell::RefCell;
 use core::fmt;
 use nom::lib::std::fmt::Formatter;
-use crate::decoder;
+use crate::{read_object};
 
 named!(parse_blob<Blob>,
    do_parse!(

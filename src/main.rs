@@ -38,7 +38,11 @@ pub fn cli() -> Result<()> {
             let name = c_matchs.value_of("name").ok_or_else(|| anyhow!("please take branch name"))?;
 
             let rep = Repository::new()?;
-            rep.checkout(name, new)?;
+            if new {
+                rep.create_new_branch(name)?;
+            } else {
+                rep.checkout_branch(name)?;
+            }
         }
 
         ("branch", b_matchs) => {
