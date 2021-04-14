@@ -20,6 +20,7 @@ use std::path::PathBuf;
 use flate2::read::ZlibDecoder;
 use nom::AsBytes;
 use std::fs::File;
+use std::os::macos::fs::MetadataExt;
 
 /*
 const GIT_PATH: &str = ".git";
@@ -57,17 +58,16 @@ pub fn read_object(hasher: &str) -> Result<Vec<u8>> {
 }
 
 /// 将从 git objects中读取的blob文件内容恢复到文件中
-pub fn blob_to_file(path: &PathBuf, body: &Vec<u8>) -> Result<()> {
-    if path.exists() {
-        std::fs::remove_file(path)?;
-    }
+pub fn blob_to_file(path: &PathBuf, body: &Vec<u8>) -> Result<(i64, i64)> {
     let mut out_file = std::fs::OpenOptions::new()
         .write(true)
+        .truncate(true)
         .append(false)
-        .create(true)
+        //.create(true)
         .open(path)?;
     let _ = out_file.write(body)?;
-    Ok(())
+    let md = std::fs::metadata(path)?;
+    Ok((md.st_mtime(), md.st_mtime_nsec()))
 }
 
 /// 文本内容写入到以hasher命名的git objects文件中
@@ -75,6 +75,9 @@ pub fn write_object_to_file(sha: &str, body: &Vec<u8>) -> Result<()> {
     let file = PathBuf::new().join(".git").join("objects");
     let dir = file.join(&sha[0..2]);
     let object = dir.join(&sha[2..]);
+    if object.exists() {
+        return Ok(());
+    };
 
     let bytes = compression(body)?;
     std::fs::create_dir(dir)?;

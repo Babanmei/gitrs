@@ -106,7 +106,9 @@ impl Repository {
         }
 
         for (path, content) in map.iter() {
-            blob_to_file(path, content)?;
+            let (mt1, mt2) = blob_to_file(path, content)?;
+            let file_name = path.file_name().unwrap().to_str().unwrap();
+            self.stage.update_entrie_mtime(file_name, (mt1 as i32, mt2 as i32));
         }
         Ok(())
     }

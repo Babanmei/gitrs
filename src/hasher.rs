@@ -50,12 +50,10 @@ pub fn generic_tree_hash(parent: &mut Tree, path: &PathBuf, files: &Vec<String>)
                 let mut child = Tree::new(encoded_form.clone());
                 let (child_hasher, tree_body_bytes) = generic_tree_hash(&mut child, &path, files);
 
-                if let Err(_e) = write_object_to_file(
+                write_object_to_file(
                     child_hasher.digest().to_string().as_str(),
                     &tree_body_bytes,
-                ) {
-                    println!("write tree to file error: {}", child_hasher.digest().to_string().as_str())
-                }
+                ).unwrap();
                 child.sha1 = child_hasher.clone().digest().to_string();
                 parent.add_child_tree(encoded_form.clone(), child);
                 child_hasher

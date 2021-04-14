@@ -63,7 +63,7 @@ impl Index {
             if equal {
                 self.entries.borrow_mut().remove(idx);
                 self.entries.borrow_mut().push(ent);
-            }else {
+            } else {
                 self.entries.borrow_mut().push(ent);
                 *self.entry_count.borrow_mut() += 1
             }
@@ -85,6 +85,17 @@ impl Index {
             }
         }
         false
+    }
+
+    pub fn update_entrie_mtime(&self, name: &str, mtime: (i32, i32)) -> Result<()> {
+        for ent in self.entries.borrow_mut().iter_mut() {
+            if ent.name.as_str() == name {
+                ent.mtime = mtime;
+                break;
+            }
+        }
+        self.write_index_file()?;
+        Ok(())
     }
 }
 
@@ -141,7 +152,7 @@ impl Entry {
             entry_len += 2;
         }
         let name_len = flag & 0xFFF;
-        if name_len < 0xFFF { entry_len += name_len } else { entry_len += 2}
+        if name_len < 0xFFF { entry_len += name_len } else { entry_len += 2 }
 
         let pad_len = 8 - (entry_len % 8);
         let mut pad = vec![];
